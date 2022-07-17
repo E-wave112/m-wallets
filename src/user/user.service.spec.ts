@@ -22,8 +22,6 @@ import { AuthService } from '../auth/auth.service';
 import { TransactionPinDto } from './dto/transaction-pin.dto';
 import { PrivateKeyDto } from './dto/private-key.dto';
 import { ResetTransactionPinDto } from './dto/reset-transaction-pin.dto';
-import { stringToArray, arrayToString, excludeFields } from '../utils';
-import { BeneficiaryDto } from './dto/beneficiary.dto';
 
 jest.setTimeout(60000);
 
@@ -279,68 +277,6 @@ describe('UserService', () => {
             try {
                 const result = await service.resetTransactionPin(id, resetPin);
                 expect(result).toBeCalledWith(id, resetPin);
-            } catch (error) {
-                expect(error).toBeInstanceOf(Error);
-            }
-        });
-    });
-
-    describe('add a new beneficiary', () => {
-        it('service to add a new beneficiary', async () => {
-            const id = uuidv4();
-            const email = 'dwaave171@yahoo.com';
-            const beneficiary = new BeneficiaryDto();
-            beneficiary.email = email;
-            try {
-                const result = await service.addBeneficiary(id, beneficiary);
-                expect(result).toBeCalledWith(id, beneficiary);
-                expect(excludeFields).toHaveBeenCalledWith(User);
-                expect(stringToArray).toHaveBeenCalled();
-                expect(arrayToString).toHaveBeenCalled();
-            } catch (error) {
-                expect(error).toBeInstanceOf(Error);
-            }
-        });
-    });
-
-    describe('get beneficiaries', () => {
-        it('service to get the beneficiaries of a particular user', async () => {
-            const id = uuidv4();
-            try {
-                const result = await service.viewAllUserBeneficiaries(id);
-                expect(result).toBeCalledWith(id);
-                expect(stringToArray).toHaveBeenCalled();
-            } catch (error) {
-                expect(error).toBeInstanceOf(Error);
-            }
-        });
-    });
-
-    describe('delete beneficiary', () => {
-        it('service to delete a user beneficiary', async () => {
-            const id = uuidv4();
-            const beneficiary = new BeneficiaryDto();
-            beneficiary.email = 'eddybrock@hotmail.com';
-            try {
-                const result = await service.deleteBeneficiary(id, beneficiary);
-                expect(result).toBeCalledWith(id, beneficiary);
-                expect(stringToArray).toHaveBeenCalled();
-                expect(arrayToString).toHaveBeenCalled();
-            } catch (error) {
-                expect(error).toBeInstanceOf(Error);
-            }
-        });
-    });
-
-    describe('get a single beneficiary', () => {
-        it('service to get a single beneficiary', async () => {
-            const id = uuidv4();
-            const beneficiary = new BeneficiaryDto();
-            beneficiary.email = 'eddybrock@hotmail.com';
-            try {
-                const result = await service.checkBeneficiary(id, beneficiary);
-                expect(result).toBeCalledWith(id, beneficiary);
-                expect(stringToArray).toHaveBeenCalled();
             } catch (error) {
                 expect(error).toBeInstanceOf(Error);
             }

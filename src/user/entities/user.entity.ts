@@ -68,9 +68,6 @@ export class User extends BaseEntity {
     @Column({ type: 'varchar', default: '' })
     lastLoggedIn?: string;
 
-    @Column({ type: 'varchar' })
-    beneficiaries: string;
-
     @Column()
     @CreateDateColumn()
     createdAt: Date;

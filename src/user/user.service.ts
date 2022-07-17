@@ -13,18 +13,8 @@ import {
     TokenExpiredException,
     TransactionPinNotSetException,
     AccountNotVerifiedException,
-    BeneficiaryAlreadyAddedException,
-    CannotAddSelfException,
-    NoBeneficiariesException,
-    BeneficiaryNotFoundException,
 } from '../exceptions';
-import {
-    Compare,
-    hashCred,
-    excludeFields,
-    stringToArray,
-    arrayToString,
-} from '../utils';
+import { Compare, hashCred } from '../utils';
 import { RequestVerifyEmailDto } from './dto/request-verify-email.dto';
 import { EmailOption } from '../mail/types/mail.types';
 import { mailStructure } from '../mail/interface-send/mail.send';
@@ -37,7 +27,6 @@ import { TransactionPinDto } from './dto/transaction-pin.dto';
 import { PrivateKeyDto } from './dto/private-key.dto';
 import { ResetTransactionPinDto } from './dto/reset-transaction-pin.dto';
 import { ValidatePinDto } from './dto/validate-pin.dto';
-import { BeneficiaryDto } from './dto/beneficiary.dto';
 import { ChangeTransactionPinDto } from './dto/change-transaction-pin.dto';
 
 @Injectable()
@@ -390,131 +379,6 @@ export class UserService {
             };
         } catch (error) {
             throw new IncorrectCredentialsException(error.message);
-        }
-    }
-
-    async addBeneficiary(id: string, data: BeneficiaryDto) {
-        try {
-            const findUser: User = await this.findUserById(id);
-            //check if beneficiary already exists
-            let findBeneficiary = await this.findUserByEmail(data.email);
-            if (findBeneficiary) {
-                // check if beneficiary is the same user
-                if (findBeneficiary.email === findUser.email) {
-                    throw new CannotAddSelfException();
-                }
-                // check if beneficiary is already added
-                const userBeneficiaries = findUser.beneficiaries;
-                // convert the beneficiaries string to an array representation
-                const userBeneficiariesArr = stringToArray(userBeneficiaries);
-                // check if the beneficiary is already added
-                const isBeneficiaryAdded = userBeneficiariesArr.find(
-                    (beneficiary) => {
-                        return beneficiary.email === findBeneficiary.email;
-                    },
-                );
-                if (isBeneficiaryAdded) {
-                    throw new BeneficiaryAlreadyAddedException();
-                }
-                // exclude certain fields the user should not see and add the beneficiary
-                findBeneficiary = excludeFields(
-                    [
-                        'pin',
-                        'transactionPin',
-                        'privateKey',
-                        'createdAt',
-                        'updatedAt',
-                        'resetToken',
-                        'resetTokenExpiry',
-                        'isAdmin',
-                        'dob',
-                        'beneficiaries',
-                        'deviceId',
-                        'deviceIp',
-                        'deviceModel',
-                        'verified',
-                        'platform',
-                        'lastLoggedIn',
-                        'createdAt',
-                        'updatedAt',
-                        'id',
-                    ],
-                    findBeneficiary,
-                );
-                userBeneficiariesArr.push(findBeneficiary);
-                // convert back to string before saving to db
-                findUser.beneficiaries = arrayToString(userBeneficiariesArr);
-                await findUser.save();
-                return {
-                    statusCode: 200,
-                    message: 'beneficiary added successfully!',
-                };
-            } else {
-                throw new UserNotFoundException();
-            }
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
-    }
-
-    async viewAllUserBeneficiaries(id: string) {
-        try {
-            const findUser: User = await this.findUserById(id);
-            const beneficiaries = stringToArray(findUser.beneficiaries);
-            if (beneficiaries.length === 0) {
-                throw new NoBeneficiariesException();
-            }
-            return {
-                statusCode: 200,
-                message: 'beneficiaries retrieved successfully!',
-                beneficiaries,
-            };
-        } catch (error) {
-            throw new BadRequestException(error.message);
-        }
-    }
-
-    async deleteBeneficiary(id: string, data: BeneficiaryDto) {
-        try {
-            const findUser: User = await this.findUserById(id);
-            const beneficiaries = stringToArray(findUser.beneficiaries);
-            const findBeneficiary = beneficiaries.find((beneficiary) => {
-                return beneficiary.email === data.email;
-            });
-            if (!findBeneficiary) {
-                throw new BeneficiaryNotFoundException();
-            }
-            // remove the beneficiary from the array
-            beneficiaries.splice(beneficiaries.indexOf(findBeneficiary), 1);
-            // convert back to string before saving to db
-            findUser.beneficiaries = arrayToString(beneficiaries);
-            await findUser.save();
-            return {
-                statusCode: 200,
-                message: 'beneficiary deleted successfully!',
-            };
-        } catch (error) {
-            throw new BeneficiaryNotFoundException(error.message);
-        }
-    }
-
-    async checkBeneficiary(id: string, data: BeneficiaryDto) {
-        try {
-            const findUser: User = await this.findUserById(id);
-            const beneficiaries = stringToArray(findUser.beneficiaries);
-            const findBeneficiary = beneficiaries.find((beneficiary) => {
-                return beneficiary.email === data.email;
-            });
-            if (!findBeneficiary) {
-                throw new BeneficiaryNotFoundException();
-            }
-            return {
-                statusCode: 200,
-                message: 'beneficiary found successfully!',
-                data: findBeneficiary,
-            };
-        } catch (error) {
-            throw new BeneficiaryNotFoundException(error.message);
         }
     }
 }

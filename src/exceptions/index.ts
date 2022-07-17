@@ -9,7 +9,3 @@ export * from './token-expired';
 export * from './transaction-notfound';
 export * from './transaction-pin-not-set';
 export * from './account-not-verified';
-export * from './beneficiary-already-exists';
-export * from './cannot-add-beneficiary';
-export * from './no-user-beneficiaries';
-export * from './beneficiary-not-found';

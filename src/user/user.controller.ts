@@ -28,7 +28,6 @@ import { RequestResetPinDto } from './dto/request-reset-pin.dto';
 import { TransactionPinDto } from './dto/transaction-pin.dto';
 import { ResetTransactionPinDto } from './dto/reset-transaction-pin.dto';
 import { PrivateKeyDto } from './dto/private-key.dto';
-import { BeneficiaryDto } from './dto/beneficiary.dto';
 import { ChangeTransactionPinDto } from './dto/change-transaction-pin.dto';
 
 @Controller('user')
@@ -145,38 +144,5 @@ export class UserController {
         @UserDecorator() users: any,
     ) {
         return await this.userService.updateTransactionPin(body, users.userId);
-    }
-
-    @UseGuards(UserAuthGuard)
-    @Get('beneficaries/me')
-    async getUserBeneficaries(@UserDecorator() users: any) {
-        return await this.userService.viewAllUserBeneficiaries(users.userId);
-    }
-
-    @UseGuards(UserAuthGuard)
-    @Post('beneficiary/new')
-    async addNewBeneficiary(
-        @UserDecorator() users: any,
-        @Body() body: BeneficiaryDto,
-    ) {
-        return await this.userService.addBeneficiary(users.userId, body);
-    }
-
-    @UseGuards(UserAuthGuard)
-    @Put('beneficiary/remove')
-    async deleteUserBeneficiary(
-        @UserDecorator() users: any,
-        @Body() body: BeneficiaryDto,
-    ) {
-        return await this.userService.deleteBeneficiary(users.userId, body);
-    }
-
-    @UseGuards(UserAuthGuard)
-    @Get('beneficiary/one')
-    async getSingleBeneficiary(
-        @UserDecorator() users: any,
-        @Body() body: BeneficiaryDto,
-    ) {
-        return await this.userService.checkBeneficiary(users.userId, body);
     }
 }

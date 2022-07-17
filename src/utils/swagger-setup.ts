@@ -3,8 +3,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export const SwaggerInit = (app: INestApplication) => {
     const config = new DocumentBuilder()
-        .setTitle('Lazer wallet API')
-        .setDescription('The documentation for the Lazer wallet API')
+        .setTitle('Moni wallet API')
+        .setDescription('The documentation for the moni wallet API')
         .setVersion('1.0.0')
         .addTag('wallets')
         .addBearerAuth()
