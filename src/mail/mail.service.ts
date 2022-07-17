@@ -18,7 +18,7 @@ export class MailService {
         try {
             const message: any = {
                 to: options.recipients,
-                from: options.from || 'support@bitwallet.io',
+                from: options.from || 'support@moniwallet.io',
                 subject: options.subject || 'Account Notification',
                 templateId: options.templateId,
             };
