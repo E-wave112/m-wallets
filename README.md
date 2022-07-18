@@ -1,5 +1,5 @@
 # moni-wallet
-A wallet system API developed with NestJS, PostgreSQL and typeorm 
+A simple P2P wallet system developed with nestjs, typeorm and postgresql
 
 ## This API assumes the following functionalities and constraints to enforce security and integrity
 - A security private key will be generated for users on sign up
