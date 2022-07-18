@@ -1,13 +1,13 @@
 # moni-wallet
 
-![CircleCI](https://img.shields.io/circleci/build/github/E-wave112/m-wallets?token=bff5adf48f3d1acce9b2f433755a99ac1503192f)
+![CircleCI](https://img.shields.io/circleci/build/github/E-wave112/m-wallets?token=bff5adf48f3d1acce9b2f433755a99ac1503192f) [![GitHub license](https://img.shields.io/github/license/E-wave112/m-wallets)](https://github.com/E-wave112/m-wallets/blob/master/LICENSE)
 
-A simple P2P wallet system developed with nestjs, typeorm and postgresql
+A simple P2P wallet system developed with NestJS, Typeorm and Postgresql
 
 ## This API assumes the following functionalities and constraints to enforce security and integrity
 - A security private key will be generated for users on sign up
 - Abilities for users to be able to fund (with either card or bank transfer) and withdraw money to their wallet using the [Flutterwave](https://flutterwave.com/us/) payment gateway.
-- users will be able to perform peer to peer transactions to other users and withdraw from their wallet using the transaction pin.
+- users will be able to perform peer to peer transactions to other users and withdraw from their wallet using their transaction pin.
 - during the peer to peer transaction, the sender and receiver will receive email notifications of the transaction.
 - users can only use that security key for recovering their transaction pin.
 - The security key has to be kept in an ultrasafe manner as there is no way for users to recover their account once they lose the key
