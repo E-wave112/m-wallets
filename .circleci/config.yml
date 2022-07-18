@@ -7,7 +7,7 @@ jobs:
     executor: node/default
     steps:
       - checkout
-      - node/install-packages:
+      - node/install-packages
       - run:
           name: installing packages
           command: |
