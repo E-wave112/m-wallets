@@ -12,7 +12,7 @@ import { User } from '../../user/entities/user.entity';
 
 @Entity('Transactions')
 export class Transactions extends BaseEntity {
-    @PrimaryGeneratedColumn()
+    @PrimaryGeneratedColumn('uuid')
     id: number;
 
     @ManyToOne(() => User, (user) => user.id, {

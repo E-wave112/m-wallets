@@ -143,7 +143,7 @@ export class UserService {
             // TODO send mail
             const verifyEmail: EmailOption = mailStructure(
                 [data.email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Verify Your Account',
                 this.configService.get('TEMPLATE_VERIFY_ACCOUNT'),
                 {
@@ -264,7 +264,7 @@ export class UserService {
             // TODO: send email
             const resetPin: EmailOption = mailStructure(
                 [data.email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Reset your Pin',
                 this.configService.get('TEMPLATE_RESET_PIN'),
                 {
