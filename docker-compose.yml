@@ -2,12 +2,12 @@ version: "3.7"
 
 services:
   web:
-    image: fuse
+    image: mwallet
     build:
       context: .
       dockerfile: Dockerfile
       target: dev
-    container_name: fuse-wallet
+    container_name: m-wallets
     restart: always
     ports:
       - "${PORT}:${PORT}"
@@ -33,8 +33,8 @@ services:
       - WEBHOOK_HASH=${WEBHOOK_HASH}
       - API_BASE_URL=${API_BASE_URL}
     networks:
-      - fusewallet-network
+      - mwallet-network
 
 networks:
-  fusewallet-network:
-    name: fusewallet-network
+  mwallet-network:
+    name: mwallet-network

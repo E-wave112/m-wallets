@@ -329,7 +329,7 @@ export class WalletService {
 
             const optionsReciever: EmailOption = mailStructure(
                 [receiverUser.email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Notice of a Received Peer Transaction',
                 this.configService.get('TEMPLATE_RECEIVED_ID'),
                 {
@@ -342,7 +342,7 @@ export class WalletService {
             );
             const optionsSender: EmailOption = mailStructure(
                 [senderWallet.user.email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Notice of a Transfer',
                 this.configService.get('TEMPLATE_TRANSFER_ID'),
                 {

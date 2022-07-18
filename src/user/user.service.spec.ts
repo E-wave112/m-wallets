@@ -141,7 +141,7 @@ describe('UserService', () => {
             const BASE_URL = configService.get<'string'>('API_BASE_URL');
             const resetPin: EmailOption = mailStructure(
                 [email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Reset your Pin',
                 configService.get('TEMPLATE_RESET_PIN'),
                 {
@@ -204,7 +204,7 @@ describe('UserService', () => {
 
             const verify: EmailOption = mailStructure(
                 [verifyEmail.email],
-                'support@fusewallet.io',
+                'support@moniwallet.io',
                 'Verify Your Account',
                 configService.get('TEMPLATE_VERIFY_ACCOUNT'),
                 {
