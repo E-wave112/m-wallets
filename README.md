@@ -1,4 +1,7 @@
 # moni-wallet
+
+![CircleCI](https://img.shields.io/circleci/build/github/E-wave112/m-wallets?token=bff5adf48f3d1acce9b2f433755a99ac1503192f)
+
 A simple P2P wallet system developed with nestjs, typeorm and postgresql
 
 ## This API assumes the following functionalities and constraints to enforce security and integrity
