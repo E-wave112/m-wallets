@@ -30,6 +30,7 @@ import { WithdrawWalletDto } from './dto/withraw-wallet.dto';
 import { PeerTransferDto } from './dto/peer-transfer.dto';
 import { EmailOption } from '../mail/types/mail.types';
 import { mailStructure } from '../mail/interface-send/mail.send';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class WalletService {
@@ -39,6 +40,7 @@ export class WalletService {
         private transactionService: TransactionService,
         private userService: UserService,
         private mailService: MailService,
+        private entityManager: EntityManager,
     ) {}
 
     async flutterwaveChargeCard(payload: FlutterwaveChargeCardDto) {
@@ -278,6 +280,8 @@ export class WalletService {
                 senderWallet,
             );
             if (!funds) throw new InsufficientTokensException();
+            senderWallet.balance =
+                Number(senderWallet.balance) - Number(data.amount);
 
             // check if the transaction pin is correct
             const checkTransactionPin =
@@ -294,8 +298,17 @@ export class WalletService {
                 where: { user: { id: receiverUser.id } },
             });
 
-            await this.updateWalletBalance(-Number(data.amount), senderWallet);
-            await this.updateWalletBalance(Number(data.amount), receiverWallet);
+            receiverWallet.balance =
+                Number(receiverWallet.balance) + Number(data.amount);
+            //  start a transaction using the entity manager
+            await this.entityManager.transaction(
+                async (transactionalEntityManager) => {
+                    // update the sender wallet
+                    await transactionalEntityManager.save(senderWallet);
+                    // update the receiver wallet
+                    await transactionalEntityManager.save(receiverWallet);
+                },
+            );
 
             const transactionObjSender: TransactionDto = {
                 user: data.user.userId,
