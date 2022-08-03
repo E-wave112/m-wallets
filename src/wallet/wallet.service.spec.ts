@@ -25,6 +25,7 @@ import { ConfigService } from '@nestjs/config';
 import { MailModule } from '../mail/mail.module';
 import { MailService } from '../mail/mail.service';
 import { WithdrawWalletDto } from './dto/withraw-wallet.dto';
+import { EntityManager } from 'typeorm';
 jest.setTimeout(60000);
 jest.mock('../transaction/transaction.service');
 
@@ -48,6 +49,7 @@ describe('WalletService', () => {
                 TransactionService,
                 ConfigService,
                 MailService,
+                EntityManager,
             ],
         }).compile();
 
