@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Emailver } from './entities/emailver.entity';
 import { AuthModule } from '../auth/auth.module';
 import { MailModule } from '../mail/mail.module';
+import { UserEventListener } from './listeners';
 
 @Module({
     imports: [
@@ -17,6 +18,6 @@ import { MailModule } from '../mail/mail.module';
     ],
     controllers: [UserController],
     exports: [TypeOrmModule, UserService],
-    providers: [UserService, User, Emailver],
+    providers: [UserService, User, Emailver, UserEventListener],
 })
 export class UserModule {}

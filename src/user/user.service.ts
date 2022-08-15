@@ -19,7 +19,6 @@ import { RequestVerifyEmailDto } from './dto/request-verify-email.dto';
 import { EmailOption } from '../mail/types/mail.types';
 import { mailStructure } from '../mail/interface-send/mail.send';
 import { v4 as uuidv4 } from 'uuid';
-import { MailService } from '../mail/mail.service';
 import { ResetPinDto } from './dto/reset-pin.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequestResetPinDto } from './dto/request-reset-pin.dto';
@@ -28,6 +27,7 @@ import { PrivateKeyDto } from './dto/private-key.dto';
 import { ResetTransactionPinDto } from './dto/reset-transaction-pin.dto';
 import { ValidatePinDto } from './dto/validate-pin.dto';
 import { ChangeTransactionPinDto } from './dto/change-transaction-pin.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class UserService {
@@ -37,7 +37,7 @@ export class UserService {
         private EmailverRepository: Repository<Emailver>,
         private readonly user: User,
         private readonly configService: ConfigService,
-        private readonly mailService: MailService,
+        private eventEmitter: EventEmitter2,
     ) {}
 
     async findUser(login: LogInUserDto): Promise<User> {
@@ -153,7 +153,7 @@ export class UserService {
                 },
             );
 
-            await this.mailService.send(verifyEmail);
+            this.eventEmitter.emit('user.verification', verifyEmail);
             return {
                 statusCode: 200,
                 message: 'Email verification link sent successfully!',
@@ -274,7 +274,7 @@ export class UserService {
                 },
             );
 
-            await this.mailService.send(resetPin);
+            this.eventEmitter.emit('user.reset-pin', resetPin);
             return {
                 statusCode: 200,
                 message: 'Reset pin link sent successfully!',
