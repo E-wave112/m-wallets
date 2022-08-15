@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsNotEmpty } from 'class-validator';
+import {
+    IsString,
+    IsNumber,
+    IsNotEmpty,
+    IsPositive,
+    Min,
+} from 'class-validator';
 
 export class FundWalletByCardDto {
     @IsNotEmpty()
@@ -15,6 +21,8 @@ export class FundWalletByCardDto {
 
     @IsNotEmpty()
     @IsNumber()
+    @IsPositive()
+    @Min(100)
     amount: number;
 
     @IsNotEmpty()
