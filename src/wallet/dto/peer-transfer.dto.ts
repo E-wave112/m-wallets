@@ -4,6 +4,8 @@ import {
     IsNotEmpty,
     IsEmail,
     IsOptional,
+    IsPositive,
+    Min,
 } from 'class-validator';
 
 export class PeerTransferDto {
@@ -18,6 +20,8 @@ export class PeerTransferDto {
 
     @IsNotEmpty()
     @IsNumber()
+    @IsPositive()
+    @Min(100)
     amount: number;
 
     @IsNotEmpty()

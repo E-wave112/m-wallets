@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from './entities/wallet.entity';
@@ -280,8 +280,8 @@ export class WalletService {
                 senderWallet,
             );
             if (!funds) throw new InsufficientTokensException();
-            senderWallet.balance =
-                Number(senderWallet.balance) - Number(data.amount);
+            // senderWallet.balance =
+            //     Number(senderWallet.balance) - Number(data.amount);
 
             // check if the transaction pin is correct
             const checkTransactionPin =
@@ -298,82 +298,101 @@ export class WalletService {
                 where: { user: { id: receiverUser.id } },
             });
 
-            receiverWallet.balance =
-                Number(receiverWallet.balance) + Number(data.amount);
+            // receiverWallet.balance =
+            //     Number(receiverWallet.balance) + Number(data.amount);
             //  start a transaction using the entity manager
             await this.entityManager.transaction(
                 async (transactionalEntityManager) => {
+                    const updatedSender = await transactionalEntityManager
+                        .createQueryBuilder(Wallet, 'wallet')
+                        .setLock('pessimistic_write')
+                        .where({ user: { id: data.user.userId } })
+                        .getOne();
+
+                    updatedSender.balance =
+                        Number(updatedSender.balance) - Number(data.amount);
+
                     // update the sender wallet
-                    await transactionalEntityManager.save(senderWallet);
+                    await transactionalEntityManager.save(updatedSender);
+                    // await transactionalEntityManager.save(senderWallet);
+
+                    const updatedReceiver = await transactionalEntityManager
+                        .createQueryBuilder(Wallet, 'wallet')
+                        .setLock('pessimistic_write')
+                        .where({ user: { id: receiverUser.id } })
+                        .getOne();
+
+                    updatedReceiver.balance =
+                        Number(updatedReceiver.balance) + Number(data.amount);
                     // update the receiver wallet
-                    await transactionalEntityManager.save(receiverWallet);
+                    await transactionalEntityManager.save(updatedReceiver);
+                    // await transactionalEntityManager.save(receiverWallet);
+
+                    const transactionObjSender: TransactionDto = {
+                        user: data.user.userId,
+                        amount: data.amount,
+                        type: TransactionType.PEER_TRANSFER,
+                        status: TransactionStatus.SUCCESS,
+                        reference: ref,
+                        narration: 'peer transfer completed',
+                    };
+
+                    const transactionObjReceiver: TransactionDto = {
+                        user: receiverUser.id,
+                        amount: data.amount,
+                        type: TransactionType.CREDIT,
+                        status: TransactionStatus.SUCCESS,
+                        reference: ref2,
+                        narration: 'amount credited to your wallet',
+                    };
+                    const transactionQueue: Transactions[] = [
+                        await this.transactionService.createTransaction(
+                            transactionObjSender,
+                        ),
+                        await this.transactionService.createTransaction(
+                            transactionObjReceiver,
+                        ),
+                    ];
+
+                    Promise.all(transactionQueue).then((values) => {
+                        console.log('values:::', values);
+                    });
+
+                    const optionsReciever: EmailOption = mailStructure(
+                        [receiverUser.email],
+                        'support@moniwallet.io',
+                        'Notice of a Received Peer Transaction',
+                        this.configService.get('TEMPLATE_RECEIVED_ID'),
+                        {
+                            name: `${receiverUser.firstName}`,
+                            subject: 'Notice of a Received Peer Transaction',
+                            amount: `${data.amount}`,
+                            address: senderWallet.user.email,
+                            balance: updatedReceiver.balance,
+                        },
+                    );
+                    const optionsSender: EmailOption = mailStructure(
+                        [senderWallet.user.email],
+                        'support@moniwallet.io',
+                        'Notice of a Transfer',
+                        this.configService.get('TEMPLATE_TRANSFER_ID'),
+                        {
+                            name: `${senderWallet.user.firstName}`,
+                            subject: 'Notice of a Transfer',
+                            amount: `${data.amount}`,
+                            address: receiverWallet.user.email,
+                            balance: updatedSender.balance,
+                        },
+                    );
+
+                    this.eventEmitter.emit('token.sent', optionsSender);
+                    this.eventEmitter.emit('token.recieved', optionsReciever);
                 },
             );
-
-            const transactionObjSender: TransactionDto = {
-                user: data.user.userId,
-                amount: data.amount,
-                type: TransactionType.PEER_TRANSFER,
-                status: TransactionStatus.SUCCESS,
-                reference: ref,
-                narration: 'peer transfer completed',
-            };
-
-            const transactionObjReceiver: TransactionDto = {
-                user: receiverUser.id,
-                amount: data.amount,
-                type: TransactionType.CREDIT,
-                status: TransactionStatus.SUCCESS,
-                reference: ref2,
-                narration: 'amount credited to your wallet',
-            };
-            const transactionQueue: Transactions[] = [
-                await this.transactionService.createTransaction(
-                    transactionObjSender,
-                ),
-                await this.transactionService.createTransaction(
-                    transactionObjReceiver,
-                ),
-            ];
-
-            Promise.all(transactionQueue).then((values) => {
-                console.log('values:::', values);
-            });
-
-            const optionsReciever: EmailOption = mailStructure(
-                [receiverUser.email],
-                'support@moniwallet.io',
-                'Notice of a Received Peer Transaction',
-                this.configService.get('TEMPLATE_RECEIVED_ID'),
-                {
-                    name: `${receiverUser.firstName}`,
-                    subject: 'Notice of a Received Peer Transaction',
-                    amount: `${data.amount}`,
-                    address: senderWallet.user.email,
-                    balance: receiverWallet.balance,
-                },
-            );
-            const optionsSender: EmailOption = mailStructure(
-                [senderWallet.user.email],
-                'support@moniwallet.io',
-                'Notice of a Transfer',
-                this.configService.get('TEMPLATE_TRANSFER_ID'),
-                {
-                    name: `${senderWallet.user.firstName}`,
-                    subject: 'Notice of a Transfer',
-                    amount: `${data.amount}`,
-                    address: receiverWallet.user.email,
-                    balance: senderWallet.balance,
-                },
-            );
-
-            this.eventEmitter.emit('token.sent', optionsSender);
-            this.eventEmitter.emit('token.recieved', optionsReciever);
 
             return {
                 status: 200,
                 message: `peer completed!, you have successfully sent ${data.amount} tokens to user with the address ${receiverUser.email}, you (and your peer) should recieve an email confirmation of the transaction`,
-                senderWallet,
             };
         } catch (error) {
             throw new InternalErrorException(error.message);
@@ -465,6 +484,12 @@ export class WalletService {
 
     async reconcileFundMethod(user: any, query: string, data: any) {
         try {
+            // check if amount is less than 100
+            if (Number(data.amount) < 100) {
+                throw new BadRequestException(
+                    'amount must be greater than 100',
+                );
+            }
             if (!query)
                 throw new InternalErrorException(
                     'method of funding is required',

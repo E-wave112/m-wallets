@@ -5,8 +5,8 @@ const { join } = require('path');
 // const configService: ConfigService = new ConfigService(configuration);
 
 module.exports = {
-    type: 'postgres',
-    port: 5432,
+    type: 'mysql',
+    port: 3306,
     url: process.env.DB_URI,
     synchronize: false,
     entities: ['dist/src/**/*.entity.{ts,js}'],
