@@ -1,5 +1,6 @@
 import {
     forwardRef,
+    HttpStatus,
     Inject,
     Injectable,
     UnauthorizedException,
@@ -15,7 +16,7 @@ import {
 import { VerifyWebhookDto } from './dto/verify-webhook.dto';
 import { TransactionStatus } from './constants/transaction.enum';
 import { WalletService } from '../wallet/wallet.service';
-import { stripString } from '../utils';
+import { stripString, ResponseStruct } from '../utils';
 
 @Injectable()
 export class TransactionService {
@@ -38,7 +39,7 @@ export class TransactionService {
 
     async viewUserTransactions(
         user: Record<any, unknown>,
-    ): Promise<Transactions[]> {
+    ): Promise<ResponseStruct> {
         try {
             const userTransactions = await this.TransactionsRepository.find(
                 user,
@@ -46,7 +47,11 @@ export class TransactionService {
             if (!userTransactions.length) {
                 throw new TransactionNotFoundException();
             }
-            return userTransactions;
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'transactions retrieved successfully',
+                data: userTransactions,
+            };
         } catch (err: any) {
             throw new TransactionNotFoundException();
         }
@@ -56,9 +61,11 @@ export class TransactionService {
     async verifyWebhookService(data: VerifyWebhookDto) {
         try {
             const walletId = stripString(data.body.tx_ref);
-            const findWallet = await this.walletService.checkIfWalletExists({
+            const wallet = await this.walletService.checkIfWalletExists({
                 where: { user: { id: walletId } },
             });
+
+            const findWallet = wallet.data;
             // verify the hash of the webhook request
             if (!data.headers || data.headers !== data.hash) {
                 // This request isn't from Flutterwave; discard

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
 import { LogInUserDto } from './dto/login.dto';
 import { ChangePinDto } from './dto/change-pin.dto';
@@ -14,7 +14,7 @@ import {
     TransactionPinNotSetException,
     AccountNotVerifiedException,
 } from '../exceptions';
-import { Compare, hashCred } from '../utils';
+import { Compare, hashCred, ResponseStruct } from '../utils';
 import { RequestVerifyEmailDto } from './dto/request-verify-email.dto';
 import { EmailOption } from '../mail/types/mail.types';
 import { mailStructure } from '../mail/interface-send/mail.send';
@@ -96,7 +96,7 @@ export class UserService {
         }
     }
 
-    async updateUser(id: string, user: Partial<User>) {
+    async updateUser(id: string, user: Partial<User>): Promise<ResponseStruct> {
         try {
             const singleUser = await this.findUserById(id);
             if (user.pin || user.transactionPin) {
@@ -109,13 +109,19 @@ export class UserService {
                 ...user,
             });
 
-            return { message: 'user updated successfully', updatedUser };
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'user updated successfully',
+                data: updatedUser,
+            };
         } catch (err: any) {
             throw new BadRequestException(err.message);
         }
     }
 
-    async requestVerifyEmail(data: RequestVerifyEmailDto) {
+    async requestVerifyEmail(
+        data: RequestVerifyEmailDto,
+    ): Promise<ResponseStruct> {
         const BASE_URL = this.configService.get<'string'>('API_BASE_URL');
 
         try {
@@ -155,7 +161,7 @@ export class UserService {
 
             this.eventEmitter.emit('user.verification', verifyEmail);
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Email verification link sent successfully!',
             };
         } catch (error) {
@@ -163,7 +169,7 @@ export class UserService {
         }
     }
 
-    async verifyEmail(data: VerifyEmailDto) {
+    async verifyEmail(data: VerifyEmailDto): Promise<ResponseStruct> {
         try {
             const findEmailVerifyToken: Emailver =
                 await this.EmailverRepository.findOne({
@@ -172,7 +178,7 @@ export class UserService {
                     email: data.email,
                 });
             if (!findEmailVerifyToken) {
-                return new BadRequestException('invalid token!');
+                throw new BadRequestException('invalid token!');
             }
             if (
                 findEmailVerifyToken.verifyTokenExpiry < Date.now() ||
@@ -180,7 +186,7 @@ export class UserService {
             ) {
                 findEmailVerifyToken.valid = false;
                 await findEmailVerifyToken.save();
-                return new BadRequestException(
+                throw new BadRequestException(
                     'token expired!, please try verifying your email again',
                 );
             }
@@ -198,7 +204,7 @@ export class UserService {
             await user.save();
             await findEmailVerifyToken.remove();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Email verified successfully!',
             };
         } catch (error) {
@@ -208,7 +214,7 @@ export class UserService {
         }
     }
 
-    async updatePin(data: ChangePinDto, id: string) {
+    async updatePin(data: ChangePinDto, id: string): Promise<ResponseStruct> {
         try {
             const user = await this.findUserById(id);
             if (!(await Compare(data.oldPin, user.pin)))
@@ -220,7 +226,7 @@ export class UserService {
             user.pin = hashCred(data.newPin);
             await user.save();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'pin updated successfully',
             };
         } catch (error) {
@@ -228,7 +234,7 @@ export class UserService {
         }
     }
 
-    async resetPin(data: ResetPinDto) {
+    async resetPin(data: ResetPinDto): Promise<ResponseStruct> {
         try {
             const findUserToken: User = await this.UserRepository.findOne({
                 resetToken: data.token,
@@ -244,7 +250,7 @@ export class UserService {
             findUserToken.resetTokenExpiry = Date.now();
             await findUserToken.save();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'pin reset successful!',
             };
         } catch (error) {
@@ -252,7 +258,7 @@ export class UserService {
         }
     }
 
-    async requestResetPin(data: RequestResetPinDto) {
+    async requestResetPin(data: RequestResetPinDto): Promise<ResponseStruct> {
         const BASE_URL = this.configService.get<'string'>('API_BASE_URL');
         try {
             const findUser: User = await this.findUserByEmail(data.email);
@@ -276,7 +282,7 @@ export class UserService {
 
             this.eventEmitter.emit('user.reset-pin', resetPin);
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'Reset pin link sent successfully!',
             };
         } catch (error) {
@@ -284,7 +290,10 @@ export class UserService {
         }
     }
 
-    async setTransactionPin(id: string, data: TransactionPinDto) {
+    async setTransactionPin(
+        id: string,
+        data: TransactionPinDto,
+    ): Promise<ResponseStruct> {
         try {
             const findUser: User = await this.findUserById(id);
             if (findUser.transactionPin) {
@@ -299,7 +308,7 @@ export class UserService {
             findUser.transactionPin = hashCred(data.newPin);
             await findUser.save();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'transaction pin set successfully !',
             };
         } catch (error) {
@@ -307,7 +316,9 @@ export class UserService {
         }
     }
 
-    async validateTransactionPin(data: ValidatePinDto) {
+    async validateTransactionPin(
+        data: ValidatePinDto,
+    ): Promise<ResponseStruct> {
         try {
             const findUser: User = await this.findUserById(data.userId);
             if (!findUser.transactionPin) {
@@ -319,6 +330,7 @@ export class UserService {
                 );
             }
             return {
+                statusCode: HttpStatus.OK,
                 message: 'success!',
             };
         } catch (error) {
@@ -326,14 +338,17 @@ export class UserService {
         }
     }
 
-    async validatePrivateKey(id: string, data: PrivateKeyDto) {
+    async validatePrivateKey(
+        id: string,
+        data: PrivateKeyDto,
+    ): Promise<ResponseStruct> {
         try {
             const user = await this.findUserById(id);
             if (!(await Compare(data.privateKey, user.privateKey))) {
                 throw new IncorrectCredentialsException('incorrect key!');
             }
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message:
                     'key validated successfully, now you can go ahead to reset your transaction pin!',
             };
@@ -342,7 +357,10 @@ export class UserService {
         }
     }
 
-    async resetTransactionPin(id: string, data: ResetTransactionPinDto) {
+    async resetTransactionPin(
+        id: string,
+        data: ResetTransactionPinDto,
+    ): Promise<ResponseStruct> {
         try {
             const findUser: User = await this.findUserById(id);
             if (data.transactionPin !== data.confirmPin)
@@ -352,7 +370,7 @@ export class UserService {
             findUser.transactionPin = hashCred(data.transactionPin);
             await findUser.save();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'transaction pin reset successfully!',
             };
         } catch (error) {
@@ -360,7 +378,10 @@ export class UserService {
         }
     }
 
-    async updateTransactionPin(data: ChangeTransactionPinDto, id: string) {
+    async updateTransactionPin(
+        data: ChangeTransactionPinDto,
+        id: string,
+    ): Promise<ResponseStruct> {
         try {
             const user = await this.findUserById(id);
             if (!(await Compare(data.oldPin, user.transactionPin)))
@@ -374,7 +395,7 @@ export class UserService {
             user.transactionPin = hashCred(data.newPin);
             await user.save();
             return {
-                statusCode: 200,
+                statusCode: HttpStatus.OK,
                 message: 'transaction pin updated successfully',
             };
         } catch (error) {

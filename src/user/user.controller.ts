@@ -29,6 +29,7 @@ import { TransactionPinDto } from './dto/transaction-pin.dto';
 import { ResetTransactionPinDto } from './dto/reset-transaction-pin.dto';
 import { PrivateKeyDto } from './dto/private-key.dto';
 import { ChangeTransactionPinDto } from './dto/change-transaction-pin.dto';
+import { ResponseStruct } from 'src/utils';
 
 @Controller('user')
 export class UserController {
@@ -41,8 +42,16 @@ export class UserController {
     @ApiBearerAuth()
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     @Get('me')
-    async view(@UserDecorator() user: { userId: string }) {
-        return await this.userService.findUserById(user.userId);
+    async view(
+        @UserDecorator() user: { userId: string },
+    ): Promise<ResponseStruct> {
+        const getUser = await this.userService.findUserById(user.userId);
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'User retrieved successfully',
+            data: getUser,
+        };
     }
 
     @ApiOkResponse({ status: HttpStatus.OK })
@@ -105,11 +114,11 @@ export class UserController {
     @UseGuards(UserAuthGuard)
     @Post('send-verification-email')
     async sendVerificationEmail(@UserDecorator() user: any) {
-        const getUser = await this.view(user);
+        const { data } = await this.view(user);
         return await this.userService.requestVerifyEmail({
-            firstName: getUser.firstName,
-            lastName: getUser.lastName,
-            email: getUser.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
         });
     }
 

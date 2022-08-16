@@ -17,7 +17,7 @@ describe('AppController', () => {
     describe('root', () => {
         it('should return a welcome message', () => {
             expect(appController.getHello()).toBe(
-                'Welcome to moni wallets!, please go to this url https://documenter.getpostman.com/view/11690328/UzQvtRBn to view our documentation',
+                'Welcome to M wallets!, please go to this url https://documenter.getpostman.com/view/11690328/UzQvtRBn to view our documentation',
             );
         });
     });
