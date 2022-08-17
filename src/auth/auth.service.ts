@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpStatus } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { LogInUserDto } from '../user/dto/login.dto';
 import { SignUpDto } from '../user/dto/signup.dto';
-import { hashCred } from '../utils';
+import { hashCred, ResponseStruct } from '../utils';
 import { BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,6 +12,7 @@ import { DataConflictException } from '../exceptions';
 import { GenerateAddressWalletKey } from '../user/utils/cryptogen';
 import { Wallet } from '../wallet/entities/wallet.entity';
 
+// TODO check login
 @Injectable()
 export class AuthService {
     constructor(
@@ -20,7 +21,7 @@ export class AuthService {
         @InjectRepository(User) private UserRepository: Repository<User>,
     ) {}
 
-    async login(obj: LogInUserDto) {
+    async login(obj: LogInUserDto): Promise<ResponseStruct> {
         try {
             const user = await this.userService.findUser(obj);
 
@@ -32,16 +33,19 @@ export class AuthService {
                 ...obj,
             });
             return {
-                access_token: this.jwtService.sign(payload),
+                statusCode: HttpStatus.OK,
+                data: {
+                    user: newUser,
+                    access_token: this.jwtService.sign(payload),
+                },
                 message: 'Login Successful',
-                user,
             };
         } catch (err) {
             throw new BadRequestException(err.message);
         }
     }
 
-    async signup(obj: SignUpDto) {
+    async signup(obj: SignUpDto): Promise<ResponseStruct> {
         try {
             const { email, phone } = obj;
             const user = await this.UserRepository.findOne({
@@ -65,11 +69,14 @@ export class AuthService {
             walletInstance.user = newUser;
             await walletInstance.save();
             return {
+                statusCode: HttpStatus.OK,
                 message:
                     'user created successfully, please ensure your keep your private key somewhere safe and secure as there is no way to recover it once it is lost!',
-                newUser,
-                walletInstance,
-                privateKey: privateKey,
+                data: {
+                    user: newUser,
+                    wallet: walletInstance,
+                    privateKey: privateKey,
+                },
             };
         } catch (err) {
             throw new DataConflictException(err.message);

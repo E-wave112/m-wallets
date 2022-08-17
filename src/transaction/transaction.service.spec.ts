@@ -116,11 +116,14 @@ describe('TransactionService', () => {
                     },
                     'event.type': 'ACCOUNT_TRANSACTION',
                 };
-                const checkWallet = await walletService.checkIfWalletExists({
+                /* Checking if the wallet exists. */
+                const wallet = await walletService.checkIfWalletExists({
                     where: {
                         user: { id: stripString(webhook.body.txRef) },
                     },
                 });
+
+                const checkWallet = wallet.data;
                 const walletUpdate = await walletService.updateWalletBalance(
                     Number(webhook.body.amount),
                     checkWallet,

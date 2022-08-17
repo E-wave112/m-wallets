@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { HttpStatus, Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Wallet } from './entities/wallet.entity';
@@ -31,6 +31,7 @@ import { EmailOption } from '../mail/types/mail.types';
 import { mailStructure } from '../mail/interface-send/mail.send';
 import { EntityManager } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ResponseStruct } from '../utils';
 
 @Injectable()
 export class WalletService {
@@ -81,12 +82,17 @@ export class WalletService {
         }
     }
 
-    async fundWalletWithCard(user: any, data: FundWalletByCardDto) {
+    async fundWalletWithCard(
+        user: any,
+        data: FundWalletByCardDto,
+    ): Promise<ResponseStruct> {
         // get the user card details from the req.user object
         const ref = `funded-${user.userId}`;
-        const wallet = await this.checkIfWalletExists({
+        const userWallet = await this.checkIfWalletExists({
             where: { user: { id: user.userId } },
         });
+
+        const wallet = userWallet.data;
 
         if (!wallet) throw new WalletNotFoundException();
 
@@ -125,9 +131,9 @@ export class WalletService {
                 narration: 'transaction processing',
             };
             await this.transactionService.createTransaction(transactionObj);
-            return { status: funded.status, message: funded.message };
+            return { statusCode: funded.status, message: funded.message };
         } else {
-            return { status: funded.status, message: funded.message };
+            return { statusCode: funded.status, message: funded.message };
         }
     }
 
@@ -147,12 +153,17 @@ export class WalletService {
         }
     }
 
-    async fundWalletByBank(user: any, data: FundWalletByBanktDto) {
+    async fundWalletByBank(
+        user: any,
+        data: FundWalletByBanktDto,
+    ): Promise<ResponseStruct> {
         const ref = `funded-${user.userId}`;
 
-        const wallet = await this.checkIfWalletExists({
+        const userWallet = await this.checkIfWalletExists({
             where: { user: { id: user.userId } },
         });
+
+        const wallet = userWallet.data;
 
         if (!wallet) throw new WalletNotFoundException();
 
@@ -184,9 +195,15 @@ export class WalletService {
             };
             await this.transactionService.createTransaction(transactionObj);
 
-            return { status: fundedBank.status, message: fundedBank.message };
+            return {
+                statusCode: fundedBank.status,
+                message: fundedBank.message,
+            };
         } else {
-            return { status: fundedBank.status, message: fundedBank.message };
+            return {
+                statusCode: fundedBank.status,
+                message: fundedBank.message,
+            };
         }
     }
 
@@ -206,12 +223,17 @@ export class WalletService {
         }
     }
 
-    async withdrawFromWallet(user: any, data: WithdrawWalletDto) {
+    async withdrawFromWallet(
+        user: any,
+        data: WithdrawWalletDto,
+    ): Promise<ResponseStruct> {
         const ref = `withdraw-${user.userId}`;
 
-        const wallet = await this.checkIfWalletExists({
+        const userWallet = await this.checkIfWalletExists({
             where: { user: { id: user.userId } },
         });
+
+        const wallet = userWallet.data;
 
         if (!wallet) throw new WalletNotFoundException();
 
@@ -258,25 +280,34 @@ export class WalletService {
             await this.transactionService.createTransaction(transactionObj);
 
             return {
-                status: withdrawal.status,
+                statusCode: withdrawal.status,
                 message: withdrawal.message,
-                wallet,
+                data: {
+                    wallet,
+                },
             };
         } else {
-            return { status: withdrawal.status, message: withdrawal.message };
+            return {
+                statusCode: withdrawal.status,
+                message: withdrawal.message,
+            };
         }
     }
 
-    async transferPeerTokens(data: PeerTransferDto) {
+    async transferPeerTokens(
+        payload: PeerTransferDto,
+    ): Promise<ResponseStruct> {
         try {
-            const ref = `peer-transfer-${data.user.userId}`;
+            const ref = `peer-transfer-${payload.user.userId}`;
             // find the sender wallet
-            const senderWallet = await this.checkIfWalletExists({
-                where: { user: { id: data.user.userId } },
+            const sender = await this.checkIfWalletExists({
+                where: { user: { id: payload.user.userId } },
             });
+
+            const senderWallet = sender.data;
             // check if the sender wallet balance is sufficient
             const funds = this.checkSufficientFunds(
-                Number(data.amount),
+                Number(payload.amount),
                 senderWallet,
             );
             if (!funds) throw new InsufficientTokensException();
@@ -286,17 +317,19 @@ export class WalletService {
             // check if the transaction pin is correct
             const checkTransactionPin =
                 await this.userService.validateTransactionPin({
-                    userId: data.user.userId,
-                    pin: data.transactionPin,
+                    userId: payload.user.userId,
+                    pin: payload.transactionPin,
                 });
             // find the receiver wallet
             const receiverUser = await this.userService.findUserByEmail(
-                data.receiver,
+                payload.receiver,
             );
             const ref2 = `peer-transfer-credit-${receiverUser.id}`;
-            const receiverWallet = await this.checkIfWalletExists({
+            const receiver = await this.checkIfWalletExists({
                 where: { user: { id: receiverUser.id } },
             });
+
+            const receiverWallet = receiver.data;
 
             // receiverWallet.balance =
             //     Number(receiverWallet.balance) + Number(data.amount);
@@ -306,11 +339,11 @@ export class WalletService {
                     const updatedSender = await transactionalEntityManager
                         .createQueryBuilder(Wallet, 'wallet')
                         .setLock('pessimistic_write')
-                        .where({ user: { id: data.user.userId } })
+                        .where({ user: { id: payload.user.userId } })
                         .getOne();
 
                     updatedSender.balance =
-                        Number(updatedSender.balance) - Number(data.amount);
+                        Number(updatedSender.balance) - Number(payload.amount);
 
                     // update the sender wallet
                     await transactionalEntityManager.save(updatedSender);
@@ -323,14 +356,15 @@ export class WalletService {
                         .getOne();
 
                     updatedReceiver.balance =
-                        Number(updatedReceiver.balance) + Number(data.amount);
+                        Number(updatedReceiver.balance) +
+                        Number(payload.amount);
                     // update the receiver wallet
                     await transactionalEntityManager.save(updatedReceiver);
                     // await transactionalEntityManager.save(receiverWallet);
 
                     const transactionObjSender: TransactionDto = {
-                        user: data.user.userId,
-                        amount: data.amount,
+                        user: payload.user.userId,
+                        amount: payload.amount,
                         type: TransactionType.PEER_TRANSFER,
                         status: TransactionStatus.SUCCESS,
                         reference: ref,
@@ -339,7 +373,7 @@ export class WalletService {
 
                     const transactionObjReceiver: TransactionDto = {
                         user: receiverUser.id,
-                        amount: data.amount,
+                        amount: payload.amount,
                         type: TransactionType.CREDIT,
                         status: TransactionStatus.SUCCESS,
                         reference: ref2,
@@ -366,7 +400,7 @@ export class WalletService {
                         {
                             name: `${receiverUser.firstName}`,
                             subject: 'Notice of a Received Peer Transaction',
-                            amount: `${data.amount}`,
+                            amount: `${payload.amount}`,
                             address: senderWallet.user.email,
                             balance: updatedReceiver.balance,
                         },
@@ -379,7 +413,7 @@ export class WalletService {
                         {
                             name: `${senderWallet.user.firstName}`,
                             subject: 'Notice of a Transfer',
-                            amount: `${data.amount}`,
+                            amount: `${payload.amount}`,
                             address: receiverWallet.user.email,
                             balance: updatedSender.balance,
                         },
@@ -391,8 +425,8 @@ export class WalletService {
             );
 
             return {
-                status: 200,
-                message: `peer completed!, you have successfully sent ${data.amount} tokens to user with the address ${receiverUser.email}, you (and your peer) should recieve an email confirmation of the transaction`,
+                statusCode: HttpStatus.OK,
+                message: `peer completed!, you have successfully sent ${payload.amount} tokens to user with the address ${receiverUser.email}, you (and your peer) should recieve an email confirmation of the transaction`,
             };
         } catch (error) {
             throw new InternalErrorException(error.message);
@@ -472,17 +506,25 @@ export class WalletService {
 
     async checkIfWalletExists(
         obj: Record<any, unknown>,
-    ): Promise<any | Wallet> {
+    ): Promise<ResponseStruct> {
         try {
             const findWallet = await this.walletRepository.findOne(obj);
             if (!findWallet) throw new WalletNotFoundException();
-            return findWallet;
+            return {
+                statusCode: HttpStatus.OK,
+                message: 'wallet fetched successfully',
+                data: findWallet,
+            };
         } catch (error) {
             throw new WalletNotFoundException();
         }
     }
 
-    async reconcileFundMethod(user: any, query: string, data: any) {
+    async reconcileFundMethod(
+        user: any,
+        query: string,
+        data: any,
+    ): Promise<ResponseStruct> {
         try {
             // check if amount is less than 100
             if (Number(data.amount) < 100) {

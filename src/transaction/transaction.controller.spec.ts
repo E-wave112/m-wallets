@@ -102,10 +102,7 @@ describe('TransactionController', () => {
                     'event.type': 'ACCOUNT_TRANSACTION',
                 };
                 let req: any;
-                const controllerResult = await controller.verifyWebhook(
-                    webhook,
-                    req,
-                );
+                const controllerResult = await controller.verifyWebhook(req);
                 const result = await service.verifyWebhookService(webhook);
                 expect(result).toHaveBeenCalledWith(webhook);
                 expect(controllerResult).toHaveBeenCalledWith(webhook, req);
