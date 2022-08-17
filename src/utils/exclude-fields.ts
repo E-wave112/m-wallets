@@ -1,4 +1,4 @@
-/// utility function to exclude certain fields that should not be shown to the client
+// utility function to exclude certain fields that should not be shown to the client
 export const excludeFields = (fields: string[], objects: any): any => {
     const exclude = new Set(fields);
     const result = Object.fromEntries(

@@ -146,7 +146,7 @@ export class UserService {
                       verifyTokenExpiry: expiry,
                   });
 
-            // TODO send mail
+            // send mail
             const verifyEmail: EmailOption = mailStructure(
                 [data.email],
                 'support@moniwallet.io',
@@ -267,7 +267,7 @@ export class UserService {
             findUser.resetToken = token;
             findUser.resetTokenExpiry = Date.now() + 30 * 60 * 1000;
             await findUser.save();
-            // TODO: send email
+            // send email
             const resetPin: EmailOption = mailStructure(
                 [data.email],
                 'support@moniwallet.io',

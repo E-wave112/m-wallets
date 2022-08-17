@@ -11,7 +11,6 @@ jest.setTimeout(60000);
 
 describe('AuthService', () => {
     let service: AuthService;
-    // let configService: ConfigService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -30,7 +29,6 @@ describe('AuthService', () => {
         }).compile();
 
         service = module.get<AuthService>(AuthService);
-        // configService = module.get<ConfigService>(ConfigService);
     });
 
     describe('signup a user', () => {

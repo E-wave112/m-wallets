@@ -12,7 +12,6 @@ import { DataConflictException } from '../exceptions';
 import { GenerateAddressWalletKey } from '../user/utils/cryptogen';
 import { Wallet } from '../wallet/entities/wallet.entity';
 
-// TODO check login
 @Injectable()
 export class AuthService {
     constructor(
